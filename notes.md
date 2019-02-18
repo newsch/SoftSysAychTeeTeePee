@@ -100,3 +100,4 @@ Seems like a good course of action would be to implement individual file uploads
   - someone used to have aychteeteepee.com
   - other people have used it to be funny with links
 - [IP over Avian Carriers](https://en.wikipedia.org/wiki/IP_over_Avian_Carriers)
+- Update: There are no original ideas, two people did this already for a final project at Stanford, complete with link redirecting and an in-browser editor. The domain name is now owned by a VPN something-or-other, but the code is available: [GitHub](https://github.com/PeerServer/peer-server).
