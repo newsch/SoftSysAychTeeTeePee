@@ -1,5 +1,18 @@
 # Notes
 
+
+## Tools
+- `nc`/`netcat` `domain` `port`: open a connection to the server
+  - `-l` listen
+  - write your own HTTP request: just enter `GET /`
+- browser devtools `network` tab: view/edit/resend requests
+- `python3 -m http.server PORT` a local server similar to what I'm trying to make
+  - `-b ADDRESS` address to bind to
+  - `-d DIRECTORY` directory to serve from
+
+Q: I can write spaces in urls now in Chrome and Firefox. Are spaces accepted in HTTP?
+A: No, the browsers escape the urls before sending them.
+
 ## Writing your own http server
 
 - [stackoverflow thread on the question](https://stackoverflow.com/questions/176409/build-a-simple-http-server-in-c)
@@ -17,6 +30,7 @@
   - [ServerClient](https://github.com/shrutiyer/SoftSysServerClient) chatroom (Project 2)
   - [HTTP Server in C](https://github.com/matthewruehle/softsysquestingquail)
     - [Beej's Guide to Network Programming](https://beej.us/guide/bgnet/)
+- [Wikipedia page on HTTP protocol](https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol)
 
 ### General C stuff
 - [argp and getopt for cmdline interfaces](https://stackoverflow.com/questions/9642732/parsing-command-line-arguments)
