@@ -1,10 +1,10 @@
 # Notes
 
-## writing your own http server
+## Writing your own http server
 
 - [stackoverflow thread on the question](https://stackoverflow.com/questions/176409/build-a-simple-http-server-in-c)
   - relevant RFCs: [RFC 2616 (original HTTP/1.1)](http://tools.ietf.org/html/rfc2616), [RFC 7230 (Message Syntax and Routing)](http://tools.ietf.org/html/rfc7230), [RFC 7231 (Semantics and Content)](http://tools.ietf.org/html/rfc7231), [RFC 7232 (Conditional Requests)](http://tools.ietf.org/html/rfc7232), [RFC 7233 (Range Requests)](http://tools.ietf.org/html/rfc7233), [RFC 7234 (Caching)](http://tools.ietf.org/html/rfc7234), [RFC 7235 (Authentication)](http://tools.ietf.org/html/rfc7235)
-  - [_A Practical Guide to Writing Clients and Servers](https://www.jmarshall.com/easy/http/)
+  - [A Practical Guide to Writing Clients and Servers](https://www.jmarshall.com/easy/http/)
   - [BSD Sockets (Berkeley Sockets)](https://en.wikipedia.org/wiki/Berkeley_sockets#Client-server_example_using_UDP)
   - recommended examples:
     - [tinyhttpd](https://github.com/larryhe/tinyhttpd) ([original sourceforge project](https://sourceforge.net/projects/tinyhttpd/))
@@ -22,14 +22,14 @@
 - [OSI model](https://en.wikipedia.org/wiki/OSI_model)
 - [TCP vs UDP](https://www.diffen.com/difference/TCP_vs_UDP)
 
-## server w/in a browser
+## Server w/in a browser
 
-## general wasm
+### General wasm
 - https://webassembly.org/
 - [MDN page on WebAssembly](https://developer.mozilla.org/en-US/docs/WebAssembly)
 - [reading on how C runs as wasm, and tips for writing compatible code](https://emscripten.org/docs/porting/emscripten-runtime-environment.html#emscripten-runtime-environment)
 
-### sockets in the browser
+### Sockets in the browser
 
 There doesn't seem to be much out there regarding sockets with wasm.
 - [this website](https://floooh.github.io/2017/06/09/webassembly-demystified.html#can-i-access-sockets-files-native-api-x-from-webassembly) claims that emscripten wraps websockets as sockets
