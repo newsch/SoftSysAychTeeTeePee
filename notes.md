@@ -9,8 +9,14 @@
   - recommended examples:
     - [tinyhttpd](https://github.com/larryhe/tinyhttpd) ([original sourceforge project](https://sourceforge.net/projects/tinyhttpd/))
     - [nweb](https://github.com/ankushagarwal/nweb)
+- [Concurrent Servers in C](https://eli.thegreenplace.net/2017/concurrent-servers-part-1-introduction/)
 - [Writing a Web Server from Scratch (in C#)](https://www.codeproject.com/articles/859108/writing-a-web-server-from-scratch)
+- [HTTP server in Java](https://javarevisited.blogspot.com/2015/06/how-to-create-http-server-in-java-serversocket-example.html)
 - [libsocket](https://github.com/dermesser/libsocket) C socket library "implementing TCP, UDP, and Unix sockets"
+- Earlier SoftSys projects:
+  - [ServerClient](https://github.com/shrutiyer/SoftSysServerClient) chatroom (Project 2)
+  - [HTTP Server in C](https://github.com/matthewruehle/softsysquestingquail)
+    - [Beej's Guide to Network Programming](https://beej.us/guide/bgnet/)
 
 ### General C stuff
 - [argp and getopt for cmdline interfaces](https://stackoverflow.com/questions/9642732/parsing-command-line-arguments)
