@@ -44,8 +44,13 @@ I'm cautiously optimistic that the WebAssembly extension can be implemented. I'v
 
 _Since it's just me, I'll be responsible for all of them._
 
-- Read up on tcp and http, focusing on what is necessary to the specs vs added features (like caching in http, for instance). Find/run small http server examples in C.
-- Refresh on the network layers and which ones I'll be implementing/working with.
-- Write an even simpler http server using a tcp library that only returns a single response and test it with a browser.
-- Make protocol diagrams.
-- Continue researching wasm/websockets/webrtc.
+- Read up on tcp and http, focusing on what is necessary to the specs vs added features (like caching in http, for instance). Find/run small http server examples in C.  
+  Deliverable(s): larger game plan for creating the server and a working install of an example server.
+- Refresh on the network layers and which ones I'll be implementing/working with.  
+  Deliverable(s): a quick writeup w/ diagrams
+- Make diagrams of how the protocols work.  
+  Deliverable(s): the diagrams
+- Write an even simpler http server using a tcp library that only returns a single response and test it with a browser.  
+  Deliverable(s): a working version of the thing
+- Continue researching wasm/websockets/webrtc.  
+  Deliverable(s): write an overview of the pieces involved in the problem
