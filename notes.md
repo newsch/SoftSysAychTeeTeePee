@@ -20,7 +20,7 @@ A: No, the browsers escape the urls before sending them.
   - [A Practical Guide to Writing Clients and Servers](https://www.jmarshall.com/easy/http/)
   - [BSD Sockets (Berkeley Sockets)](https://en.wikipedia.org/wiki/Berkeley_sockets#Client-server_example_using_UDP)
   - recommended examples:
-    - [tinyhttpd](https://github.com/larryhe/tinyhttpd) ([original sourceforge project](https://sourceforge.net/projects/tinyhttpd/))
+    - [tinyhttpd](https://github.com/larryhe/tinyhttpd) ([original sourceforge project](https://sourceforge.net/projects/tinyhttpd/)) see [tinyhttpd](#tinyhttpd)
     - [nweb](https://github.com/ankushagarwal/nweb)
 - [Concurrent Servers in C](https://eli.thegreenplace.net/2017/concurrent-servers-part-1-introduction/)
 - [Writing a Web Server from Scratch (in C#)](https://www.codeproject.com/articles/859108/writing-a-web-server-from-scratch)
@@ -31,6 +31,46 @@ A: No, the browsers escape the urls before sending them.
   - [HTTP Server in C](https://github.com/matthewruehle/softsysquestingquail)
     - [Beej's Guide to Network Programming](https://beej.us/guide/bgnet/)
 - [Wikipedia page on HTTP protocol](https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol)
+- https://www.w3.org/Protocols/
+
+### tinyhttpd
+
+- website: http://www.acme.com/software/thttpd/
+- most of the protocol work seems to be in `libhttpd`
+- from these [notes on non-blocking I/o](http://www.acme.com/software/thttpd/notes.html#nbio), a reasonable way to prioritize for this project seems to be:
+  1. start w/ a single-threaded server
+  2. implement forking for each response
+  3. implement pre-forking or single-process non-blocking  
+  We'll see where I get, right now I think (3) is out-of-scope for what I want to do with this project.
+- syslog logging
+- setting a directory with `chdir` function, pretty much just `cd`
+
+### HTTP standard
+
+- https://tools.ietf.org/html/rfc2616#section-2.2
+  - [RFC on how to read common RFC notation](https://tools.ietf.org/html/rfc822#section-2)
+  - line endings are CRLF
+  - header fields can wrap lines w/ leading space or tab characters
+  - > An application that sends a request or response message that includes
+    > HTTP-Version of "HTTP/1.1" MUST be at least conditionally compliant
+    > with this specification. Applications that are at least conditionally
+    > compliant with this specification SHOULD use an HTTP-Version of
+    > "HTTP/1.1" in their messages, and MUST do so for any message that is
+    > not compatible with HTTP/1.0. For more details on when to send
+    > specific HTTP-Version values, see RFC 2145 [36].
+  - [http url spec](https://tools.ietf.org/html/rfc2616#section-3.2.2) is pretty close to a regex
+    - [comparing URIs](https://tools.ietf.org/html/rfc2616#section-3.2.3)
+  - [content type spec](https://tools.ietf.org/html/rfc2616#section-3.7)
+  - [message spec](https://tools.ietf.org/html/rfc2616#section-4)
+    - ```
+      generic-message = start-line
+                  *(message-header CRLF)
+                  CRLF
+                  [ message-body ]
+      start-line      = Request-Line | Status-Line
+      ```
+  - persistent connections
+- HTTP/2 allows you to send more data than requested ()
 
 ### General C stuff
 - [argp and getopt for cmdline interfaces](https://stackoverflow.com/questions/9642732/parsing-command-line-arguments)
