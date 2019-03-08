@@ -5,15 +5,89 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netdb.h>
+#include <unistd.h>
 
 char* PORT = "8080";
+
+
+typedef struct {
+    char* name;
+    char* content;
+} header_t;
+
+// HTTP Message https://tools.ietf.org/html/rfc2616#section-4
+typedef struct {
+    char* startline;
+    header_t* headers;
+    int numheaders;
+    char* body;
+} message_t;
+
+// HTTP Request-Line https://tools.ietf.org/html/rfc2616#section-5.1
+typedef struct {
+    char method[8];
+    char* requestUri;
+    char* version;
+} requestline_t;
+
+typedef struct {
+    requestline_t requestline;
+    char** headers;
+    char* body;
+} request_t;
+
+// HTTP Status-Line https://tools.ietf.org/html/rfc2616#section-6.1
+typedef struct {
+    char* version;
+    int statuscode;
+    char* reasonphrase;
+} statusline_t;
+
+typedef struct {
+    char* version;
+    int code;
+    char* reason;
+
+    char* message;
+} response_t;
+
+
+// send an HTTP message over a socket
+int sendmessage(int sockfd, message_t* msg) {
+    int SENDBUFSIZE = 1024;  // in bytes
+    char* buffer = malloc(SENDBUFSIZE);  // TODO: handle malloc errors
+    // TODO: count how many bytes I'm adding so send can happen
+    strcpy(buffer, msg->startline);
+    strcat(buffer, "\r\n");
+    for (int i=0; i<msg->numheaders; i++) {
+        header_t h = msg->headers[i];
+        strcat(buffer, h.name);
+        strcat(buffer, ": ");
+        strcat(buffer, h.content);
+        strcat(buffer, "\r\n");
+    }
+    strcat(buffer, "\r\n");
+    strcat(buffer, msg->body);
+    send(sockfd, buffer, strlen(buffer), 0);  // TODO: don't send more than the buffer
+    return 0;
+}
+
+void return404(int sockfd) {
+    message_t msg = {
+        "HTTP/1.0 404 Not Found",
+        NULL,
+        0,
+        ""
+    };
+    sendmessage(sockfd, &msg);
+}
 
 int main() {
 
     int status;
 
     // get network info
-    struct addrinfo hints, *res;
+    struct addrinfo hints, *res, *p;
 
     memset(&hints, 0, sizeof hints);  // make sure the struct is empty
     hints.ai_family = AF_UNSPEC;      // use IPv4 or IPv6
@@ -27,23 +101,53 @@ int main() {
 
     // res now points to a linked list of 1 or more struct addrinfos
 
-    // make a socket
+    // // make a socket
     int sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
-    if (sockfd == -1) {
-        // TODO: use errno for more error info
-        fprintf(stderr, "socket creation error\n");
+    // if (sockfd == -1) {
+    //     // TODO: use errno for more error info
+    //     fprintf(stderr, "socket creation error\n");
+    //     exit(1);
+    // }
+
+    // // bind it to the port passed to getaddrinfo()
+    // if (bind(sockfd, res->ai_addr, res->ai_addrlen) == -1) {
+    //     // TODO: use errno for more error info
+    //     fprintf(stderr, "socket bind error\n");
+    //     exit(1);
+    // };
+
+    // loop through all the results and bind to the first we can
+    int yes = 1;
+    for(p = res; p != NULL; p = p->ai_next) {
+        if ((sockfd = socket(p->ai_family, p->ai_socktype,
+                p->ai_protocol)) == -1) {
+            perror("server: socket");
+            continue;
+        }
+
+        if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &yes,
+                sizeof(int)) == -1) {
+            perror("setsockopt");
+            exit(1);
+        }
+
+        if (bind(sockfd, p->ai_addr, p->ai_addrlen) == -1) {
+            close(sockfd);
+            perror("server: bind");
+            continue;
+        }
+
+        break;
+    }
+
+    freeaddrinfo(res); // free the linked-list
+
+    if (p == NULL)  {
+        fprintf(stderr, "failed to bind\n");
         exit(1);
     }
 
-    // bind it to the port passed to getaddrinfo()
-    if (bind(sockfd, res->ai_addr, res->ai_addrlen) == -1) {
-        // TODO: use errno for more error info
-        fprintf(stderr, "socket bind error\n");
-        exit(1);
-    };
-    freeaddrinfo(res); // free the linked-list
-
-    printf("Listening on port %s...", PORT);
+    printf("Listening on port %s...\n", PORT);
     // listen on the port
     // TODO: pick a better number for backlog
     if (listen(sockfd, 5) == -1) {
@@ -53,27 +157,37 @@ int main() {
     }
     printf("foo\n");
 
-    // accept incoming connection (blocking?)
-    struct sockaddr_storage their_addr;
-    socklen_t addr_size;
-    int incoming_fd;
-    addr_size = sizeof(their_addr);
-    incoming_fd = accept(sockfd, (struct sockaddr *)&their_addr, &addr_size);
-    if (incoming_fd == -1) {
-        // TODO: use errno for more error info
-        fprintf(stderr, "accept error\n");
-        exit(1);
+    while (1) {
+        // accept incoming connection (blocking?)
+        struct sockaddr_storage their_addr;
+        socklen_t addr_size;
+        int incoming_fd;
+        addr_size = sizeof(their_addr);
+        incoming_fd = accept(sockfd, (struct sockaddr *)&their_addr, &addr_size);
+        if (incoming_fd == -1) {
+            // TODO: use errno for more error info
+            fprintf(stderr, "accept error\n");
+            exit(1);
+        }
+        printf("New connection");
+
+        // receive from connection
+        int numbytes;
+        char buf[400];  // TODO: pull out to constant
+        if ((numbytes = recv(incoming_fd, buf, 400-1, 0)) == -1) {
+            perror("recv error");
+            exit(1);
+        }
+
+        buf[numbytes] = '\0';  // end buffer string
+
+        printf("client: received '%s'\n",buf);
+
+        // send(incoming_fd, "foo", 3, 0);
+        return404(incoming_fd);
+        puts("Returned 404");
+        close(incoming_fd);
+        puts("Closed connection");
     }
 
-    // receive from connection
-    int numbytes;
-    char buf[400];  // TODO: pull out to constant
-    if ((numbytes = recv(incoming_fd, buf, 400-1, 0)) == -1) {
-        perror("recv error");
-        exit(1);
-    }
-
-    buf[numbytes] = '\0';  // end buffer string
-
-    printf("client: received '%s'\n",buf);
 }

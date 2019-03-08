@@ -10,13 +10,20 @@
   - `-b ADDRESS` address to bind to
   - `-d DIRECTORY` directory to serve from
 
-Q: I can write spaces in urls now in Chrome and Firefox. Are spaces accepted in HTTP?
+## Asked Questions
+
+Q: I can write spaces in urls now in Chrome and Firefox. Are spaces accepted in HTTP?  
 A: No, the browsers escape the urls before sending them.
+
+Q: How do I know when an HTTP request/response on the socket is finished? As far as I can tell the `Content-Length` header or closing the connection are the only answers.  
+A: https://tools.ietf.org/html/rfc7230#section-3.3.3 ([the 1.0 spec](https://www.w3.org/Protocols/HTTP/1.0/spec.html#BodyLength) also puts it a little more plainly):
+  > When an Entity-Body is included with a message, the length of that body may be determined in one of two ways. If a Content-Length header field is present, its value in bytes represents the length of the Entity-Body. Otherwise, the body length is determined by the closing of the connection by the server.  
+  > Closing the connection cannot be used to indicate the end of a request body, since it leaves no possibility for the server to send back a response. Therefore, HTTP/1.0 requests containing an entity body must include a valid Content-Length header field. If a request contains an entity body and Content-Length is not specified, and the server does not recognize or cannot calculate the length from other fields, then the server should send a 400 (bad request) response. 
 
 ## Writing your own http server
 
 - [stackoverflow thread on the question](https://stackoverflow.com/questions/176409/build-a-simple-http-server-in-c)
-  - relevant RFCs: [RFC 2616 (original HTTP/1.1)](http://tools.ietf.org/html/rfc2616), [RFC 7230 (Message Syntax and Routing)](http://tools.ietf.org/html/rfc7230), [RFC 7231 (Semantics and Content)](http://tools.ietf.org/html/rfc7231), [RFC 7232 (Conditional Requests)](http://tools.ietf.org/html/rfc7232), [RFC 7233 (Range Requests)](http://tools.ietf.org/html/rfc7233), [RFC 7234 (Caching)](http://tools.ietf.org/html/rfc7234), [RFC 7235 (Authentication)](http://tools.ietf.org/html/rfc7235)
+  - relevant RFCs: [RFC 2616 (original HTTP/1.1), now outdated](http://tools.ietf.org/html/rfc2616), [RFC 7230 (Message Syntax and Routing)](http://tools.ietf.org/html/rfc7230), [RFC 7231 (Semantics and Content)](http://tools.ietf.org/html/rfc7231), [RFC 7232 (Conditional Requests)](http://tools.ietf.org/html/rfc7232), [RFC 7233 (Range Requests)](http://tools.ietf.org/html/rfc7233), [RFC 7234 (Caching)](http://tools.ietf.org/html/rfc7234), [RFC 7235 (Authentication)](http://tools.ietf.org/html/rfc7235)
   - [A Practical Guide to Writing Clients and Servers](https://www.jmarshall.com/easy/http/)
   - [BSD Sockets (Berkeley Sockets)](https://en.wikipedia.org/wiki/Berkeley_sockets#Client-server_example_using_UDP)
   - recommended examples:
@@ -32,6 +39,7 @@ A: No, the browsers escape the urls before sending them.
     - [Beej's Guide to Network Programming](https://beej.us/guide/bgnet/)
 - [Wikipedia page on HTTP protocol](https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol)
 - https://www.w3.org/Protocols/
+- [MDN page on HTTP](https://developer.mozilla.org/en-US/docs/Web/HTTP)
 
 ### tinyhttpd
 
@@ -70,7 +78,8 @@ A: No, the browsers escape the urls before sending them.
       start-line      = Request-Line | Status-Line
       ```
   - persistent connections
-- HTTP/2 allows you to send more data than requested ()
+- HTTP/2 sends data in frames/streams
+- HTTP/2 allows you to send more data than requested
 
 ### General C stuff
 - [argp and getopt for cmdline interfaces](https://stackoverflow.com/questions/9642732/parsing-command-line-arguments)

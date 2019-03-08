@@ -7,7 +7,7 @@ CFLAGS += -DVERSION=\"$(GIT_VERSION)\"
 
 CCOMMAND=$(CC) $(CFLAGS) $^ -o $@
 
-attp-server : http.c
+server : http.c
 	$(CCOMMAND)
 
 %.o: CFLAGS += -c
