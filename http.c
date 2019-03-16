@@ -7,6 +7,10 @@
 #include <netdb.h>
 #include <unistd.h>
 
+#ifndef VERSION
+#define VERSION "pre-release"
+#endif
+
 char* PORT = "8080";
 
 
@@ -48,8 +52,20 @@ typedef struct {
     int code;
     char* reason;
 
-    char* message;
+    header_t* headers;
+    int numheaders;
+    char* body;
 } response_t;
+
+header_t GLOBAL_HEADERS[] = {
+    {"Server", "ATTP/" VERSION},
+    {"Date", "Wed, 16 Apr 97 22:54:42 GMT"},
+    // {"Connection", "close"},  // default for 1.0
+    // {"Content-Length", "7"},
+    {"Content-Type", "text/html; charset=utf-8"},
+};
+
+int NUM_GLOBAL_HEADERS = sizeof(GLOBAL_HEADERS) / sizeof(header_t);
 
 
 // send an HTTP message over a socket
@@ -70,6 +86,56 @@ int sendmessage(int sockfd, message_t* msg) {
     strcat(buffer, msg->body);
     send(sockfd, buffer, strlen(buffer), 0);  // TODO: don't send more than the buffer
     return 0;
+}
+
+// int parse_header(char* name, char* content, struct argp_state* state) {
+
+// }
+
+
+int sendresponse(int sockfd, response_t* rsp) {
+    char startline[128];
+    snprintf(startline, sizeof(startline), "HTTP/%s %d %s", rsp->version, rsp->code, rsp->reason);
+    message_t msg = {
+        startline,
+        rsp->headers,
+        rsp->numheaders,
+        rsp->body
+    };
+    int response = sendmessage(sockfd, &msg);
+    return response;
+}
+
+int sendcode(int sockfd, int code, char* reason) {
+    response_t rsp = {
+        "1.0",
+        code,
+        reason,
+        GLOBAL_HEADERS,
+        NUM_GLOBAL_HEADERS,
+        "",
+    };
+    return sendresponse(sockfd, &rsp);
+}
+
+// send a file over a socket
+void sendfile(int sockfd, char* filename) {
+    // TODO: make mimetype from extension
+    FILE* f = fopen(filename, "rb");
+
+    int BUFSIZE = 100;
+    char buffer[BUFSIZE];
+
+    size_t bytesread;
+    while ((bytesread = fread(buffer, sizeof(char), BUFSIZE, f))) {
+        printf("Read %li bytes from file %s\n", bytesread, filename);
+        send(sockfd, buffer, bytesread, 0);
+    }
+}
+
+void handlefilerequest(int sockfd, char* filename) {
+    sendcode(sockfd, 200, "OK");
+    sendfile(sockfd, filename);
 }
 
 void return404(int sockfd) {
@@ -102,7 +168,7 @@ int main() {
     // res now points to a linked list of 1 or more struct addrinfos
 
     // // make a socket
-    int sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
+    int sockfd; // = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
     // if (sockfd == -1) {
     //     // TODO: use errno for more error info
     //     fprintf(stderr, "socket creation error\n");
@@ -184,10 +250,13 @@ int main() {
         printf("client: received '%s'\n",buf);
 
         // send(incoming_fd, "foo", 3, 0);
-        return404(incoming_fd);
+        // sendcode(incoming_fd, 404, "Not Found");
+        handlefilerequest(incoming_fd, "index.html");
+
         puts("Returned 404");
         close(incoming_fd);
         puts("Closed connection");
+        // break;
     }
 
 }
