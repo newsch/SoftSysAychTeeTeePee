@@ -68,6 +68,37 @@ header_t GLOBAL_HEADERS[] = {
 int NUM_GLOBAL_HEADERS = sizeof(GLOBAL_HEADERS) / sizeof(header_t);
 
 
+int sendresponsestartline(int sockfd, int code, char* reason) {
+    int BUFSIZE = 128;
+    char buffer[BUFSIZE];
+    int status = snprintf(buffer, BUFSIZE, "HTTP/%s %d %s", "1.0", code, reason);
+    if (status < 0 || status >= BUFSIZE) {
+        return -1;
+    }
+    status = send(sockfd, buffer, status, 0);
+    if (status < 0) {
+        return status;
+    } else {
+        return 0;
+    }
+}
+
+
+void sendheaders(int sockfd, header_t* headers, int numheaders) {
+    int BUFSIZE = 1024;
+    char buffer[BUFSIZE];
+
+    // TODO: check for buffer overflow
+    for (int i=0; i<numheaders; i++) {
+        header_t h = headers[i];
+        strncpy(buffer, h.name, BUFSIZE);
+        strcat(buffer, ": ");
+        strcat(buffer, h.content);
+        strcat(buffer, "\r\n");
+        send(sockfd, buffer, strlen(buffer), 0);
+    }
+}
+
 // send an HTTP message over a socket
 int sendmessage(int sockfd, message_t* msg) {
     int SENDBUFSIZE = 1024;  // in bytes
@@ -118,34 +149,50 @@ int sendcode(int sockfd, int code, char* reason) {
     return sendresponse(sockfd, &rsp);
 }
 
+void send404(int sockfd) {
+    sendcode(sockfd, 404, "Not Found");
+}
+
+long getfilelength(FILE* fp) {
+    fseek(fp, 0L, SEEK_END);
+    long size = ftell(fp);
+    rewind(fp);
+    return size;
+}
+
 // send a file over a socket
-void sendfile(int sockfd, char* filename) {
-    // TODO: make mimetype from extension
-    FILE* f = fopen(filename, "rb");
+void sendfile(int sockfd, FILE* fp) {
 
     int BUFSIZE = 100;
     char buffer[BUFSIZE];
 
     size_t bytesread;
-    while ((bytesread = fread(buffer, sizeof(char), BUFSIZE, f))) {
-        printf("Read %li bytes from file %s\n", bytesread, filename);
+    while ((bytesread = fread(buffer, sizeof(char), BUFSIZE, fp))) {
+        printf("Read %li bytes from file.\n", bytesread);
         send(sockfd, buffer, bytesread, 0);
     }
 }
 
 void handlefilerequest(int sockfd, char* filename) {
-    sendcode(sockfd, 200, "OK");
-    sendfile(sockfd, filename);
-}
+    // TODO: make mimetype from extension
+    FILE* fp = fopen(filename, "rb");
+    if (!fp) {
+        send404(sockfd);
+        return;
+    }
 
-void return404(int sockfd) {
-    message_t msg = {
-        "HTTP/1.0 404 Not Found",
-        NULL,
-        0,
-        ""
-    };
-    sendmessage(sockfd, &msg);
+    long fsize = getfilelength(fp);
+    char fsizestr[sizeof(long)];
+    snprintf(fsizestr, sizeof(fsizestr) / sizeof(char), "%li", fsize);
+    header_t contentheader = {"Content-Length", fsizestr};
+
+    // TODO: check statuses
+    sendresponsestartline(sockfd, 200, "OK");
+    sendheaders(sockfd, GLOBAL_HEADERS, NUM_GLOBAL_HEADERS);
+    sendheaders(sockfd, &contentheader, 1);
+    send(sockfd, "\r\n", 2, 0);
+
+    sendfile(sockfd, fp);
 }
 
 int main() {
@@ -253,7 +300,7 @@ int main() {
         // sendcode(incoming_fd, 404, "Not Found");
         handlefilerequest(incoming_fd, "index.html");
 
-        puts("Returned 404");
+        puts("Finished Response");
         close(incoming_fd);
         puts("Closed connection");
         // break;
