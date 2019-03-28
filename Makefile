@@ -7,12 +7,11 @@ CFLAGS += -DVERSION=\"$(GIT_VERSION)\"
 
 CCOMMAND=$(CC) $(CFLAGS) $^ -o $@
 
-server : http.c
+server: http.c
 	$(CCOMMAND)
-
 %.o: CFLAGS += -c
 %.o: %.c %.h
 	$(CC) $(CFLAGS) $< -o $@
 
 clean:
-	rm *.o attp-server
+	rm *.o server

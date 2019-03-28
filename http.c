@@ -14,6 +14,7 @@
 char* PORT = "8080";
 
 
+
 typedef struct {
     char* name;
     char* content;
@@ -173,7 +174,7 @@ void sendfile(int sockfd, FILE* fp) {
     }
 }
 
-void handlefilerequest(int sockfd, char* filename) {
+void sendfileresponse(int sockfd, char* filename) {
     // TODO: make mimetype from extension
     FILE* fp = fopen(filename, "rb");
     if (!fp) {
@@ -193,6 +194,90 @@ void handlefilerequest(int sockfd, char* filename) {
     send(sockfd, "\r\n", 2, 0);
 
     sendfile(sockfd, fp);
+}
+
+// read into buffer until newline "\r\n"
+int readline(int sockfd, char* buffer, int bufsize) {
+    size_t buf_idx = 0;
+
+    while (buf_idx < bufsize - 1 && 1 == read(sockfd, &buffer[buf_idx], 1)) {
+        if (buf_idx > 0 &&
+            '\n' == buffer[buf_idx] &&
+            '\r' == buffer[buf_idx - 1])
+        {
+            buffer[buf_idx + 1] = '\0';
+            break;
+        }
+        buf_idx++;
+    }
+    return (int) buf_idx;
+}
+
+int readrequestline(int sockfd, requestline_t* store, int lenM, int lenU, int lenV) {
+    int BUFSIZE = 1024;
+    char buffer[BUFSIZE];
+    int numread = readline(sockfd, buffer, BUFSIZE);
+    if (numread < 0) {
+        return -1;
+    } else if (numread >= BUFSIZE) {
+        return -2;
+    }
+    printf("got:\n%s\n", buffer);
+
+    // not thread-safe, per strtok definition
+    // TODO: look into strtok_r
+    char* method = strtok(buffer, " ");
+    char* uri = strtok(NULL, " ");  // get uri after first space
+    char* newend = strtok(NULL, "/");  // remove line-ending
+    char* version = strtok(NULL, "\r\n");  // get version after HTTP/
+
+    if (method == NULL || uri == NULL || version == NULL || newend == NULL) {
+        return -1;
+    }
+
+    strncpy(store->method, method, lenM);
+    strncpy(store->requestUri, uri, lenU);
+    strncpy(store->version, version, lenV);
+
+    if (store->method[lenM-1] != '\0' ||
+        store->requestUri[lenU-1] != '\0' ||
+        store->version[lenV-1] != '\0') {
+        return -3;
+    }
+
+    return 0;
+}
+
+// int readheaderline(int sockfd, header_t* store, lenN, lenC) {
+//     int BUFSIZE = 1024;
+//     char buffer[BUFSIZE];
+//     int numread = readline(sockfd, buffer, BUFSIZE);
+//     if (numread == 2) {  // empty final line
+//         return 1;
+//     }
+
+// }
+
+int handlerequest(int sockfd) {
+    char uri[128];
+    char ver[8];
+    requestline_t r = {
+        "",
+        uri,
+        ver
+    };
+    int status = readrequestline(sockfd, &r, 8, 128, 8);
+    printf("readrequestline returned %i\n", status);
+    if (status == -2) {
+        sendcode(sockfd, 400, "Request start line too long");
+        return -1;
+    } else if (status < 0) {
+        sendcode(sockfd, 500, "Internal Server Error");
+        return -1;
+    }
+    printf("method: %s\nuri: %s\nver: %s\n", r.method, r.requestUri, r.version);
+    // sendcode(sockfd, 431, "Request Header Fields Too Large")
+    return 0;
 }
 
 int main() {
@@ -285,20 +370,21 @@ int main() {
         printf("New connection");
 
         // receive from connection
-        int numbytes;
-        char buf[400];  // TODO: pull out to constant
-        if ((numbytes = recv(incoming_fd, buf, 400-1, 0)) == -1) {
-            perror("recv error");
-            exit(1);
-        }
+        // int numbytes;
+        // char buf[400];  // TODO: pull out to constant
+        // if ((numbytes = recv(incoming_fd, buf, 400-1, 0)) == -1) {
+        //     perror("recv error");
+        //     exit(1);
+        // }
 
-        buf[numbytes] = '\0';  // end buffer string
+        // buf[numbytes] = '\0';  // end buffer string
 
-        printf("client: received '%s'\n",buf);
+        // printf("client: received '%s'\n",buf);
+        handlerequest(incoming_fd);
 
         // send(incoming_fd, "foo", 3, 0);
         // sendcode(incoming_fd, 404, "Not Found");
-        handlefilerequest(incoming_fd, "index.html");
+        sendfileresponse(incoming_fd, "index.html");
 
         puts("Finished Response");
         close(incoming_fd);
