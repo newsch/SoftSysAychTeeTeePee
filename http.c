@@ -60,10 +60,10 @@ typedef struct {
 
 header_t GLOBAL_HEADERS[] = {
     {"Server", "ATTP/" VERSION},
-    {"Date", "Wed, 16 Apr 97 22:54:42 GMT"},
+    // {"Date", "Wed, 16 Apr 97 22:54:42 GMT"},
     // {"Connection", "close"},  // default for 1.0
     // {"Content-Length", "7"},
-    {"Content-Type", "text/html; charset=utf-8"},
+    // {"Content-Type", "text/html; charset=utf-8"},
 };
 
 int NUM_GLOBAL_HEADERS = sizeof(GLOBAL_HEADERS) / sizeof(header_t);
@@ -72,7 +72,7 @@ int NUM_GLOBAL_HEADERS = sizeof(GLOBAL_HEADERS) / sizeof(header_t);
 int sendresponsestartline(int sockfd, int code, char* reason) {
     int BUFSIZE = 128;
     char buffer[BUFSIZE];
-    int status = snprintf(buffer, BUFSIZE, "HTTP/%s %d %s", "1.0", code, reason);
+    int status = snprintf(buffer, BUFSIZE, "HTTP/%s %d %s\r\n", "1.0", code, reason);
     if (status < 0 || status >= BUFSIZE) {
         return -1;
     }
@@ -151,7 +151,9 @@ int sendcode(int sockfd, int code, char* reason) {
 }
 
 void send404(int sockfd) {
-    sendcode(sockfd, 404, "Not Found");
+    sendresponsestartline(sockfd, 404, "Not Found");
+    sendheaders(sockfd, &((header_t) {"Content-Length", "3"}), 1);
+    send(sockfd, "\r\n404", 5, 0);
 }
 
 long getfilelength(FILE* fp) {
@@ -174,9 +176,27 @@ void sendfile(int sockfd, FILE* fp) {
     }
 }
 
+int resolvepath(char* resp, char* path) {
+    size_t plen = strlen(path);
+    if (path[0] == '/') {
+        strcpy(resp, path + 1);
+    } else {
+        strcpy(resp, path);
+    }
+    if (path[plen - 1] == '/') {
+        strcat(resp, "index.html");
+    }
+    printf("Changed \"%s\" to \"%s\"\n", path, resp);
+    return 0;
+}
+
 void sendfileresponse(int sockfd, char* filename) {
+    char fn[sizeof(filename) / sizeof(char) + 16 * sizeof(char)];
     // TODO: make mimetype from extension
-    FILE* fp = fopen(filename, "rb");
+    // TODO: check for directory names
+    resolvepath(fn, filename);
+
+    FILE* fp = fopen(fn, "rb");
     if (!fp) {
         send404(sockfd);
         return;
@@ -186,6 +206,8 @@ void sendfileresponse(int sockfd, char* filename) {
     char fsizestr[sizeof(long)];
     snprintf(fsizestr, sizeof(fsizestr) / sizeof(char), "%li", fsize);
     header_t contentheader = {"Content-Length", fsizestr};
+    // TODO: add Date
+    // TODO: add content-type
 
     // TODO: check statuses
     sendresponsestartline(sockfd, 200, "OK");
@@ -258,6 +280,18 @@ int readrequestline(int sockfd, requestline_t* store, int lenM, int lenU, int le
 
 // }
 
+// int parseuri(char* uri) {
+//     // pattern from https://tools.ietf.org/html/rfc3986#appendix-B
+//     const char pattern = "^(([^:/?#]+):)?(//([^/?#]*))?([^?#]*)(\?([^#]*))?(#(.*))?";
+//     regex_t re;
+//     int res = regcomp(&re, pattern, REG_NOSUB);  // ignore case and get success/fail
+//     if (res != 0) {
+//         return -1;
+//     }
+//     regfree(&re);
+
+// }
+
 int handlerequest(int sockfd) {
     char uri[128];
     char ver[8];
@@ -277,6 +311,7 @@ int handlerequest(int sockfd) {
     }
     printf("method: %s\nuri: %s\nver: %s\n", r.method, r.requestUri, r.version);
     // sendcode(sockfd, 431, "Request Header Fields Too Large")
+    sendfileresponse(sockfd, r.requestUri++);
     return 0;
 }
 
@@ -384,7 +419,7 @@ int main() {
 
         // send(incoming_fd, "foo", 3, 0);
         // sendcode(incoming_fd, 404, "Not Found");
-        sendfileresponse(incoming_fd, "index.html");
+        // sendfileresponse(incoming_fd, "index.html");
 
         puts("Finished Response");
         close(incoming_fd);
