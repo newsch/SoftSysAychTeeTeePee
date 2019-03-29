@@ -63,7 +63,7 @@ header_t GLOBAL_HEADERS[] = {
     // {"Date", "Wed, 16 Apr 97 22:54:42 GMT"},
     // {"Connection", "close"},  // default for 1.0
     // {"Content-Length", "7"},
-    // {"Content-Type", "text/html; charset=utf-8"},
+    // {"Content-Type", "text/plain; charset=utf-8"},
 };
 
 int NUM_GLOBAL_HEADERS = sizeof(GLOBAL_HEADERS) / sizeof(header_t);
@@ -104,7 +104,7 @@ void sendheaders(int sockfd, header_t* headers, int numheaders) {
 int sendmessage(int sockfd, message_t* msg) {
     int SENDBUFSIZE = 1024;  // in bytes
     char* buffer = malloc(SENDBUFSIZE);  // TODO: handle malloc errors
-    // TODO: count how many bytes I'm adding so send can happen
+    // TODO: count how many bytes I'm adding so send can happen without strlen
     strcpy(buffer, msg->startline);
     strcat(buffer, "\r\n");
     for (int i=0; i<msg->numheaders; i++) {
@@ -116,7 +116,7 @@ int sendmessage(int sockfd, message_t* msg) {
     }
     strcat(buffer, "\r\n");
     strcat(buffer, msg->body);
-    send(sockfd, buffer, strlen(buffer), 0);  // TODO: don't send more than the buffer
+    send(sockfd, buffer, strlen(buffer), 0);
     return 0;
 }
 
@@ -176,6 +176,7 @@ void sendfile(int sockfd, FILE* fp) {
     }
 }
 
+// Translate a uri from a get request into a relative path
 int resolvepath(char* resp, char* path) {
     size_t plen = strlen(path);
     if (path[0] == '/') {
@@ -186,7 +187,9 @@ int resolvepath(char* resp, char* path) {
     if (path[plen - 1] == '/') {
         strcat(resp, "index.html");
     }
+    #ifdef DEBUG
     printf("Changed \"%s\" to \"%s\"\n", path, resp);
+    #endif
     return 0;
 }
 
@@ -248,10 +251,10 @@ int readrequestline(int sockfd, requestline_t* store, int lenM, int lenU, int le
 
     // not thread-safe, per strtok definition
     // TODO: look into strtok_r
-    char* method = strtok(buffer, " ");
-    char* uri = strtok(NULL, " ");  // get uri after first space
-    char* newend = strtok(NULL, "/");  // remove line-ending
-    char* version = strtok(NULL, "\r\n");  // get version after HTTP/
+    char* method = strtok(buffer, " ");  // read method until first space
+    char* uri = strtok(NULL, " ");  // get uri until second space
+    char* newend = strtok(NULL, "/");  // remove HTTP/
+    char* version = strtok(NULL, "\r\n");  // get version after HTTP/ until \r\n
 
     if (method == NULL || uri == NULL || version == NULL || newend == NULL) {
         return -1;
@@ -301,7 +304,9 @@ int handlerequest(int sockfd) {
         ver
     };
     int status = readrequestline(sockfd, &r, 8, 128, 8);
+    #ifdef DEBUG
     printf("readrequestline returned %i\n", status);
+    #endif
     if (status == -2) {
         sendcode(sockfd, 400, "Request start line too long");
         return -1;
@@ -309,9 +314,11 @@ int handlerequest(int sockfd) {
         sendcode(sockfd, 500, "Internal Server Error");
         return -1;
     }
+    #ifdef DEBUG
     printf("method: %s\nuri: %s\nver: %s\n", r.method, r.requestUri, r.version);
+    #endif
     // sendcode(sockfd, 431, "Request Header Fields Too Large")
-    sendfileresponse(sockfd, r.requestUri++);
+    sendfileresponse(sockfd, r.requestUri);
     return 0;
 }
 
